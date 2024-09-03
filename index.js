@@ -1,20 +1,5 @@
 const express = require('express')
 const app = express()
-const morgan = require('morgan');
-const cors = require('cors')
-
-app.use(cors())
-app.use(express.json())
-morgan.token('body', function (req, res) { 
-  if(req.method == 'POST'){
-    return JSON.stringify(req.body)
-  }
-  return
-})
-
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
-app.use(express.static('dist'))
-
 
 let people = [
   { 
@@ -38,6 +23,25 @@ let people = [
     "number": "39-23-6423122"
   }
 ]
+
+
+const morgan = require('morgan');
+const cors = require('cors')
+
+app.use(cors())
+app.use(express.json())
+
+morgan.token('body', function (req, res) { 
+  if(req.method == 'POST'){
+    return JSON.stringify(req.body)
+  }
+  return
+})
+
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
+app.use(express.static('dist'))
+
+
 
 // app.get('/', (request, response) => {
 //   response.send('<h1>PhoneBook:<a href="http://localhost:3001/api/peoples">here</a></h1>')
