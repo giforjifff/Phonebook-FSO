@@ -13,7 +13,7 @@ morgan.token('body', function (req, res) {
 })
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
-
+app.use(express.static('dist'))
 
 
 let people = [
