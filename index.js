@@ -39,9 +39,9 @@ let people = [
   }
 ]
 
-app.get('/', (request, response) => {
-  response.send('<h1>PhoneBook:<a href="http://localhost:3001/api/peoples">here</a></h1>')
-})
+// app.get('/', (request, response) => {
+//   response.send('<h1>PhoneBook:<a href="http://localhost:3001/api/peoples">here</a></h1>')
+// })
 
 app.get('/api/peoples', (request, response) => {
   response.json(people)
