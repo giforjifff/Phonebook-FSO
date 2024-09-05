@@ -19,8 +19,24 @@ morgan.token('body', function (req, res) {
 })
 
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'));
-app.use(express.static('dist'))
 
+
+app.use(express.static('dist'))
+app.use((req,res,next)=>{
+  console.log('Inside a Middleware');
+  next()
+})
+function errorHandler(error, request, response, next){
+  console.log('Inside Error Handler');
+  
+  console.log(error)
+  if(error.name === 'CastError'){
+    console.log("In here");
+    
+    response.status(400).send({ error: 'malformatted id' })
+  }
+  next(error)
+}
 
 async function requestHandling() {
   const people = await People.find({})
@@ -32,11 +48,11 @@ async function requestHandling() {
     })
   })
   
-  app.get('/api/peoples/:id', (request, response) => {
+  app.get('/api/peoples/:id', (request, response, next) => {
     const id = request.params.id
     People.findById(id).then((person)=>{
+      console.log(person);
       if(person){
-        console.log(person);
         response.json(person)
       }
       else{
@@ -45,8 +61,7 @@ async function requestHandling() {
       
     })
     .catch(error => {
-      console.log(error)
-      response.status(400).send({ error: 'malformatted id' })
+      return next(error)
     })
   
   })
@@ -56,11 +71,16 @@ async function requestHandling() {
     response.send(`<p>Phonebook has info of  ${people.length}</p><br><p>${new Date()}</p>`)
   })
   
-  app.delete('/api/peoples/:id', (request, response) => {
-    const id = request.params.id
-    people = people.filter(note => note.id !== id)
-  
-    response.status(204).end()
+  app.delete('/api/peoples/:id', (request, response, next) => {
+    console.log(request);
+    
+    People.findByIdAndDelete(request.params.id)
+    .then(result => {
+      console.log(result);
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+
   })
   
   app.post('/api/peoples', (request, response) => {
@@ -84,7 +104,10 @@ async function requestHandling() {
   })
   
 }
+// app.use(requestHandling)
 requestHandling()
+app.use(errorHandler)
+
 
 // app.get('/', (request, response) => {
 //   response.send('<h1>PhoneBook:<a href="http://localhost:3001/api/peoples">here</a></h1>')
