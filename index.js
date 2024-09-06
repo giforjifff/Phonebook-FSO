@@ -26,86 +26,130 @@ app.use((req,res,next)=>{
   console.log('Inside a Middleware');
   next()
 })
-function errorHandler(error, request, response, next){
-  console.log('Inside Error Handler');
-  
-  console.log(error)
-  if(error.name === 'CastError'){
-    console.log("In here");
-    
-    response.status(400).send({ error: 'malformatted id' })
-  }
-  next(error)
-}
 
-async function requestHandling() {
-  const people = await People.find({})
-  app.get('/api/peoples', (request, response) => {
-    People.find({}).then((result)=>{
-      console.log(result);
-      
-      response.json(result)
-    })
+
+app.get('/api/peoples', (request, response) => {
+  People.find({}).then((result)=>{
+    console.log(result);
+    
+    response.json(result)
   })
+})
+
+app.get('/api/peoples/:id', (request, response, next) => {
+  console.log("Inside people/id");
   
-  app.get('/api/peoples/:id', (request, response, next) => {
-    const id = request.params.id
-    People.findById(id).then((person)=>{
-      console.log(person);
-      if(person){
-        response.json(person)
-      }
-      else{
-        response.status(404).end()
-      }
-      
-    })
-    .catch(error => {
-      return next(error)
-    })
-  
+  const id = request.params.id
+  People.findById(id)
+  .then((person)=>{
+    console.log(person);
+    if(person){
+      response.json(person)
+    }
+    else{
+      response.status(404).end()
+    }
+    
   })
-  
-  app.get('/info',(request, response)=>{
-  
+  .catch(error => {
+    console.log("Inside Catch");
+    return next(error)
+    
+  })
+
+})
+
+app.get('/info',(request, response)=>{
+  People.find({}).then(people =>{
     response.send(`<p>Phonebook has info of  ${people.length}</p><br><p>${new Date()}</p>`)
   })
-  
-  app.delete('/api/peoples/:id', (request, response, next) => {
-    console.log(request);
-    
-    People.findByIdAndDelete(request.params.id)
-    .then(result => {
-      console.log(result);
-      response.status(204).end()
-    })
-    .catch(error => next(error))
+})
 
-  })
+app.delete('/api/peoples/:id', (request, response, next) => {
+  console.log(request);
   
-  app.post('/api/peoples', (request, response) => {
+  People.findByIdAndDelete(request.params.id)
+  .then(result => {
+    console.log(result);
+    response.status(204).end()
+  })
+  .catch(error => next(error))
+
+})
+app.put('/api/peoples/:id',(req,res,next)=> {
+  console.log('Request Recieved');
+  console.log(req.body);
+  
+  People.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true, context: 'query' }  )
+  .then(result=>{
+    console.log(result);
+    res.send(result)
+  })
+  .catch(error => next(error))
+})
+app.post('/api/peoples', (request, response, next) => {
+  try {
+    console.log('Inside try Block');
+    
     const person = new People(request.body)
+    console.log('Loading person');
     if(person.name && person.number){
       // const maxId = people.length > 0 ? Math.max(...people.map(p => p.id)) : 0;
-      if(people.some(per => per.name.toLocaleLowerCase() === person.name.toLocaleLowerCase())){
-        response.send('<p>Person Already exits</p>')
-      }
-      else{
-        person.save().then((resp)=>{
-          console.log('result:', resp);
-          response.json(resp)
-        })
-      }
+      People.find({}).then(people=>{
+        if(people.some(per => per.name.toLocaleLowerCase() === person.name.toLocaleLowerCase())){
+          response.send('<p>Person Already exits</p>')
+        }
+        else{
+          person.save()
+          .then((resp)=>{
+            console.log('result:', resp);
+            response.json(resp)
+          })
+          .catch(error=>{
+            console.log(error);
+            
+            next(error)
+            
+          })
+        }
+      })
+      
     }
     else{
       response.send('<p>Name/Number Missing</p>')
-    }
+  }
+  } catch (error) {
+    console.log('Catch Working');
     
-  })
+    console.log(error.message);
+    
+  }
   
+  
+})
+  
+
+
+const errorHandler = (error, request, response, next) => {
+  console.log('Inside errorHandler');
+  
+  console.error(error.message)
+  console.log(error.name);
+  
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+  if(error.name == "ValidationError"){
+    return response.status(400).send({ error: `${error.message}` })
+  }
+
+  next(error)
 }
-// app.use(requestHandling)
-requestHandling()
+app.use((req,resp,next)=>{
+  console.log('Next Works');
+  next()
+})
 app.use(errorHandler)
 
 
